@@ -60,7 +60,7 @@ def start_axlisten():
 			data_buffer += data[6:].strip("\n")
 			#print data
 			if(len(data_buffer) >= packet_length):
-				parse_packet.process_packet(header, data_buffer)
+				parse_packet.process_packet(config, header, data_buffer)
 				#do something with the received data
 				
 				#Now clear the buffers
@@ -72,11 +72,12 @@ def start_axlisten():
 
 #Entry point
 if __name__ == "__main__":
-	try:
+	#try:
 		write_sm_ax_configs()
 		start_soundmodem()
 		start_axlisten()
 		
 		exit_handler(None,None)
-	except:
-		exit_handler(None,None)
+	#except:
+		#exit_handler(None,None)
+		#pass

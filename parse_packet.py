@@ -1,6 +1,6 @@
-def process_packet(header, data):
-	print "Header: "+header
-	print "Data: "+data
+def process_packet(config, header, data):
+	#print "Header: "+header
+	#print "Data: "+data
 
 	source_callsign = ""
 	destination_callsign = ""
@@ -18,5 +18,14 @@ def process_packet(header, data):
 		source_callsign = header[3:(header.find("to")-1)] #Extract the source from the real header
 		#The data remains the same
 		
+	#Strip SSID's from callsign as it does not mean anything on APRS. 
+	#It is just another way of specifying a symbol.
+	source_callsign = source_callsign[:(source_callsign.find('-'))]
+	
 	print "Source: "+source_callsign
-	print "RData: "+data
+	print "Data: "+data
+	print "\n"
+	
+	list_of_users = config.items("Authorised users")
+	if(source_callsign in list_of_users):
+		print "%s is an authorised user" % source_callsign
