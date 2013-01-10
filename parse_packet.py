@@ -1,10 +1,11 @@
 import pprint
 
 def process_packet(config, header, data):
-	#print "Header: "+header
-	#print "Data: "+data
+	#print "RawHeader: "+header
+	#print "RawData: "+data
 
 	source_callsign = ""
+	source_ssid="0"
 	destination_callsign = ""
 
 	#Check the first character if the data and decide what to do,
@@ -22,21 +23,24 @@ def process_packet(config, header, data):
 		
 	#Strip SSID's from callsign as it does not mean anything on APRS. 
 	#It is just another way of specifying a symbol.
-	source_callsign = source_callsign[:(source_callsign.find('-'))]
+	if (source_callsign.find('-') != -1):
+		source_ssid = source_callsign[(source_callsign.find('-')+1):]
+		source_callsign = source_callsign[:(source_callsign.find('-'))]
 	
-	print "Source: "+source_callsign
+	print "Source: "+source_callsign+"-"+source_ssid
 	print "Data: "+data
 	print "\n"
 	
-	#Is the packet an APRS message packet? APRS101, p71
-	#And even more important, is the message addressed to me
-	if(data[0] == ':' and data[10] == ':' 
-	and data[1:10].find(config.get("APRS encoding","my_callsign"))):
-		process_aprs_message(config, source_callsign, data)
+	#Is this an APRS message packet? APRS101, p71
+	if(data[0] == ':' and data[10] == ':'):
+		#This is and APRS message packet.
+		#Is it addressed to me? 
+		if(data[1:10].find(config.get("APRS encoding","my_callsign")) != -1):
+			process_aprs_message(config, source_callsign, source_ssid, data)
 	
 
 #We have received an APRS message format packet.
-def process_aprs_message(config, source_callsign, data):
+def process_aprs_message(config, source_callsign, source_ssid, data):
 	
 	#Read list of authorised users
 	#Note: When reading a list from a config file, the key is  
@@ -52,18 +56,39 @@ def process_aprs_message(config, source_callsign, data):
 		#If authorised, ack, else rej
 		if(source_callsign.lower() in list_of_users):
 			print "%s is an authorised user" % source_callsign
-			send_packet(config, source_callsign, ":"+source_callsign.ljust(9)+":ack"+data[(msg_id_index+1):])
+			send_packet(config, ":"+(source_callsign+"-"+source_ssid).ljust(9)+":ack"+data[(msg_id_index+1):])
 
 		else:
 			print "%s is not an authorised user" % source_callsign
-			send_packet(config, source_callsign, ":"+source_callsign.ljust(9)+":rej"+data[(msg_id_index+1):])
+			send_packet(config, ":"+(source_callsign+"-"+source_ssid).ljust(9)+":rej"+data[(msg_id_index+1):])
 		
-		
-	
+
+	#If unauthorised, ignore message further.
+	if(source_callsign.lower() in list_of_users):
+		pass
+	else:
+		return
+
 	#TODO: Use the password in the config file to do authentication
+	#if authenticated:
+	#	pass
+	#else:
+	#	return
 	
+	#If the message is "GET","get","G" or "g", send a packet with the current 
+	#GPIO states.
+	
+	#If the message is "SET A1", "S a1", "s A1" or "set a1,b0...", switch the GPIO's and then send
+	#the current state.
+	
+	#If the message is "B","b","BEACON","BeaCon",.. send a beacon now.
 
 
+def send_current_state(config,source_callsign, source_ssid):
+	#TODO
+	pass
 
-def send_packet(config, dest, message_text):
-	print ("MSG to: "+dest+" MSG: "+message_text)
+
+def send_packet(config, message_text):
+	#TODO
+	print ("MSG: "+message_text)
