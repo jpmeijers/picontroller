@@ -1,3 +1,5 @@
+import pprint
+
 def process_packet(config, header, data):
 	#print "Header: "+header
 	#print "Data: "+data
@@ -6,7 +8,7 @@ def process_packet(config, header, data):
 	destination_callsign = ""
 
 	#Check the first character if the data and decide what to do,
-	#according to the APRS Data Type Identifier table, page 27, APRS101.pdf
+	#according to the APRS Data Type Identifier table, page 17, APRS101.pdf
 	
 	#If it is a relayed packet the source callsign is in the data and 
 	#not in the header.
@@ -26,6 +28,42 @@ def process_packet(config, header, data):
 	print "Data: "+data
 	print "\n"
 	
-	list_of_users = config.items("Authorised users")
-	if(source_callsign in list_of_users):
-		print "%s is an authorised user" % source_callsign
+	#Is the packet an APRS message packet? APRS101, p71
+	#And even more important, is the message addressed to me
+	if(data[0] == ':' and data[10] == ':' 
+	and data[1:10].find(config.get("APRS encoding","my_callsign"))):
+		process_aprs_message(config, source_callsign, data)
+	
+
+#We have received an APRS message format packet.
+def process_aprs_message(config, source_callsign, data):
+	
+	#Read list of authorised users
+	#Note: When reading a list from a config file, the key is  
+	#made lower case, while the value is kept intact
+	list_of_users = config.options("Authorised users")
+	
+	
+	#All messages containing a message ID needs to be acked ackording to 
+	#the spec, APRS101, p71
+	msg_id_index = data.rfind('{')
+	if(msg_id_index != -1):	
+	
+		#If authorised, ack, else rej
+		if(source_callsign.lower() in list_of_users):
+			print "%s is an authorised user" % source_callsign
+			send_packet(config, source_callsign, ":"+source_callsign.ljust(9)+":ack"+data[(msg_id_index+1):])
+
+		else:
+			print "%s is not an authorised user" % source_callsign
+			send_packet(config, source_callsign, ":"+source_callsign.ljust(9)+":rej"+data[(msg_id_index+1):])
+		
+		
+	
+	#TODO: Use the password in the config file to do authentication
+	
+
+
+
+def send_packet(config, dest, message_text):
+	print ("MSG to: "+dest+" MSG: "+message_text)
