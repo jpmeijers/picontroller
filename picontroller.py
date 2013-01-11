@@ -4,13 +4,18 @@ import signal
 import subprocess
 import shutil
 import sys
+import threading
+import time
+import pprint
+
+#Own classes
 import parse_packet
 import gpio_management
+import aprs_transmit
 
 #global variables
 sm_process = None
 axlisten_process = None
-
 
 #load config file
 config = ConfigParser.ConfigParser()
@@ -29,6 +34,8 @@ def exit_handler(signal, frame):
 	axlisten_process.terminate()
 	
 	sys.exit()
+	
+#install the exit handler
 signal.signal(signal.SIGINT, exit_handler)
 
 
@@ -71,17 +78,38 @@ def start_axlisten():
 				packet_length = 0
 				
 
+def beacon_thread():
+	while True:
+		print "Beacon thread: Waiting %s minutes before sending another beacon" % config.get("APRS encoding", "beacon_period")
+		time.sleep( float( config.get("APRS encoding", "beacon_period") )*60 )
+		aprs_transmit.send_beacon(config)
+
 
 #Entry point
 if __name__ == "__main__":
 	#try:
+		#write the config files for soundmodem and ax25tools
 		write_sm_ax_configs()
+		
+		#initialise the GPIO's and set them to the last know configuration
 		gpio_management.init_gpio(config)
 		
-		#test case
+		#test cases
 		#gpio_management.update_cache("A","0")
+		#aprs_transmit.send_beacon(config)
 		
+		#Kill any previous running soundmodem instances - dangerous but neccesary
+		subprocess.call(["killall","soundmodem"])
+		
+		#Start the soundcard modem daemon
 		start_soundmodem()
+		time.sleep(2) #just wait a second for soundmodem to startup before we ask it for, or give it data
+		
+		#Start the thread that will periodically transmit a beacon
+		beacon_thread_pointer = threading.Thread(target=beacon_thread)
+		beacon_thread_pointer.daemon = True #will stop the thread when main program exits
+		beacon_thread_pointer.start()
+		
 		start_axlisten()
 		
 		exit_handler(None,None)

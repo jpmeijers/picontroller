@@ -32,7 +32,7 @@ def init_gpio(config):
 			if(line.find('#')==-1 and line.strip() != "" and len(line.strip()) == 2):
 				portName = line[0]
 				portState = line[1]
-				print "Cache entry: "+line.strip()
+				#print "Cache entry: "+line.strip()
 				if(config.get('Port directions',portName) == "out"):
 					#should already be set as an output
 					#GPIO.setup(int(config.get('Port mappings',portName)), GPIO.OUT)

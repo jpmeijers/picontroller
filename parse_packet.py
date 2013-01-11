@@ -27,9 +27,10 @@ def process_packet(config, header, data):
 		source_ssid = source_callsign[(source_callsign.find('-')+1):]
 		source_callsign = source_callsign[:(source_callsign.find('-'))]
 	
-	print "Source: "+source_callsign+"-"+source_ssid
-	print "Data: "+data
-	print "\n"
+	#print "Source: "+source_callsign+"-"+source_ssid
+	#print "Data: "+data
+	#print "\n"
+	print ".",
 	
 	#Is this an APRS message packet? APRS101, p71
 	if(data[0] == ':' and data[10] == ':'):
@@ -37,6 +38,7 @@ def process_packet(config, header, data):
 		#Is it addressed to me? 
 		if(data[1:10].find(config.get("APRS encoding","my_callsign")) != -1):
 			process_aprs_message(config, source_callsign, source_ssid, data)
+			print "-",
 	
 
 #We have received an APRS message format packet.
@@ -90,23 +92,37 @@ def process_aprs_message(config, source_callsign, source_ssid, data):
 		print "Empty message received."
 		return
 	
+	
 	#If the message is "GET","get","G" or "g", send a packet with the current 
 	#GPIO states.
 	if(data.find("GET") == 0 or data.find('G')):
-		input_states = gpio_management.get_input_states(config)
-		output_states = gpio_management.get_output_states_from_cache(config)
+		aprs_transmit.send_current_state(config,source_callsign, source_ssid)
+	
 	
 	#If the message is "SET A1", "S a1", "s A1" or "set a1,b0...", switch the GPIO's and then send
 	#the current state.
+	elif(data.find("SET") == 0 or data.find('S')):
+		data = data.strip("SET")
+		data = data.strip("S")
+		data = data.strip()
+		
+		ports = data.split(",")
+		
+		for port in ports:
+			if (len(port)==2):
+				if(gpio_management.set_output(config,port[0],port[1])):
+					print "Port successfully set: "+port
+				else:
+					print "Port not set: "+port
+			
+			else:
+				print "Invalid sintax for a port"
+		
+		aprs_transmit.send_current_state(config,source_callsign, source_ssid)
+		
 	
 	#If the message is "B","b","BEACON","BeaCon",.. send a beacon now.
+	elif(data.find("BEACON") == 0 or data.find('B')):
+		aprs_transmit.send_beacon(config)
 
 
-def send_current_state(config,source_callsign, source_ssid):
-	#TODO
-	pass
-
-
-def send_packet(config, message_text):
-	#TODO
-	print ("MSG: "+message_text)
