@@ -77,6 +77,10 @@ if __name__ == "__main__":
 	#try:
 		write_sm_ax_configs()
 		gpio_management.init_gpio(config)
+		
+		#test case
+		#gpio_management.update_cache("A","0")
+		
 		start_soundmodem()
 		start_axlisten()
 		

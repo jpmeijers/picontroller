@@ -1,5 +1,6 @@
 import RPi.GPIO as GPIO
 import time
+import pprint
 
 # to use Raspberry Pi board pin numbers
 GPIO.setmode(GPIO.BOARD)
@@ -44,6 +45,7 @@ GPIO.set_rising_event(11)
 #GPIO.setmode(GPIO.BCM)
 
 while True:
+	pprint.pprint(input_value)
 	if input_value != GPIO.input(11):
 		print "Pin 11 state changed."
 		input_value = GPIO.input(11)
