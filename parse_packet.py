@@ -60,7 +60,13 @@ def process_aprs_message(config, source_callsign, source_ssid, data):
 
 		else:
 			print "%s is not an authorised user" % source_callsign
-			send_packet(config, ":"+(source_callsign+"-"+source_ssid).ljust(9)+":rej"+data[(msg_id_index+1):])
+			#send_packet(config, ":"+(source_callsign+"-"+source_ssid).ljust(9)+":rej"+data[(msg_id_index+1):])
+			#The rej packet was not interpreted correctly by APRStracker during testing. It was seen as another
+			#message and not a reject. Therefore ACK in this case too to prevent unneccesary retransmits.
+			send_packet(config, ":"+(source_callsign+"-"+source_ssid).ljust(9)+":ack"+data[(msg_id_index+1):])
+			
+		#Now strip the message id
+		data = data[:msg_id_index]
 		
 
 	#If unauthorised, ignore message further.
@@ -75,8 +81,20 @@ def process_aprs_message(config, source_callsign, source_ssid, data):
 	#else:
 	#	return
 	
+	#Remove the callsign from the data
+	data = data[11:]
+	#Make all caps to be case insensitive
+	data = data.upper()
+	
+	if(data == ""):
+		print "Empty message received."
+		return
+	
 	#If the message is "GET","get","G" or "g", send a packet with the current 
 	#GPIO states.
+	if(data.find("GET") == 0 or data.find('G')):
+		input_states = gpio_management.get_input_states(config)
+		output_states = gpio_management.get_output_states_from_cache(config)
 	
 	#If the message is "SET A1", "S a1", "s A1" or "set a1,b0...", switch the GPIO's and then send
 	#the current state.

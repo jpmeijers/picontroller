@@ -5,6 +5,7 @@ import subprocess
 import shutil
 import sys
 import parse_packet
+import gpio_management
 
 #global variables
 sm_process = None
@@ -23,6 +24,7 @@ def exit_handler(signal, frame):
 	print '\nCtrl+C pressed, system exiting.'
 	#close all running threads and open files
 	
+	gpio_management.deinit()
 	sm_process.terminate()
 	axlisten_process.terminate()
 	
@@ -74,6 +76,7 @@ def start_axlisten():
 if __name__ == "__main__":
 	#try:
 		write_sm_ax_configs()
+		gpio_management.init_gpio(config)
 		start_soundmodem()
 		start_axlisten()
 		
