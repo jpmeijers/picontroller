@@ -1,4 +1,16 @@
 import pprint
+import subprocess
+import time
+import random
+
+#own classes
+import gpio_management
+
+packet_counter = 1
+
+def init():
+	global packet_counter
+	packet_counter = 1
 
 def send_beacon(config):
 	#beacon -c ZS1JPM-6 -d "BEACON WIDE1-1" -s sm0 "=3357.92S/01850.19E#JP in technopark"
@@ -34,18 +46,38 @@ def send_current_state(config,source_callsign, source_ssid):
 	
 	for i in input_states:
 		reply_message += i.upper()+","
-	reply_message.rstrip(",")
+	reply_message = reply_message.rstrip(",")
 	
-	reply_message += "OUT "
+	reply_message += " OUT "
 	for o in output_states:
 		reply_message += o.upper()+","
-	reply_message.rstrip(",")
+	reply_message = reply_message.rstrip(",")
 	
 	#TODO: temperature sensor
 	
-	send_packet(config, ":"+(source_callsign+"-"+source_ssid).ljust(9)+":STATUS "+reply_message+" END")
+	send_message(config, ":"+(source_callsign+"-"+source_ssid).ljust(9)+":STATUS "+reply_message+" END")
 
+
+def send_message(config, message_text):
+	
+	global packet_counter
+	send_packet(config, message_text+"{%d" % packet_counter)
+	
+	if(packet_counter<99999):
+		packet_counter+=1
+	else:
+		packet_counter=1
+		
 
 def send_packet(config, message_text):
-	#TODO
-	print ("PKT to send: "+message_text)
+	#works, but just give a second delay first
+	time.sleep(1)
+	time.sleep(random.random()*2)
+	
+	subprocess.call(["beacon -c "+config.get("APRS encoding", "my_callsign")
+		+" -d "+config.get("APRS encoding", "beacon_path")
+		+" -s "+config.get("soundmodem", "sm_interface")
+		+" \""+message_text+"\""], shell=True)
+	print ("Packet sent: "+message_text)
+	
+

@@ -56,20 +56,26 @@ def deinit():
 		
 
 def set_output(config, name, state):
+	# ERROR codes:
+	# 1=success, 2=invalid gpio, 3=not an output, 4=invalid state
+	
 	#Switch one output on or off
+	print "Setting port "+name+" to "+state
 	
 	#Check if name is a defined GPIO
 	port_list = config.options("Port mappings")
-	if (name in port_list):
+	if (name.lower() in port_list):
 		pass
 	else:
-		return 0 #invalid GPIO name
+		print "Not a valid GPIO"
+		return 2 #invalid GPIO name
 	
 	#Check if name is a output
 	if(config.get('Port directions',name) == "out"):
 		pass
 	else:
-		return 0 #not an output
+		print "Not an output"
+		return 3 #not an output
 					
 	#should already be set as an output
 	#GPIO.setup(int(config.get('Port mappings',portName)), GPIO.OUT)
@@ -81,7 +87,7 @@ def set_output(config, name, state):
 		print "Setting port "+name+" to ON."
 		GPIO.output(int(config.get('Port mappings',name)), GPIO.HIGH)
 	else:
-		return 0
+		return 4
 	
 	#write the output state to the cache
 	update_cache(name, state)

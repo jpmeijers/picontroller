@@ -62,7 +62,10 @@ def start_axlisten():
 		if (data.find(config.get('soundmodem','sm_interface')+": ") == 0):
 			header = data.lstrip(config.get('soundmodem','sm_interface')+": ").rstrip("\n")
 			position = header.rfind("len ")
-			packet_length = int(header[(position+4):].strip())
+			try:
+				packet_length = int(header[(position+4):].strip())
+			except:
+				pass
 			#print "\nNew packet of length %d" % packet_length
 		
 		elif (packet_length != 0):
@@ -93,6 +96,7 @@ if __name__ == "__main__":
 		
 		#initialise the GPIO's and set them to the last know configuration
 		gpio_management.init_gpio(config)
+		aprs_transmit.init()
 		
 		#test cases
 		#gpio_management.update_cache("A","0")
