@@ -1,0 +1,7 @@
+PiController APRS repeater controller
+Copyright 2012-2013 JP Meijers
+
+GPIO support is provided by the RPi.GPIO library, which is open source software
+that is released under a MIT license. The software is available form
+    http://code.google.com/p/raspberry-gpio-python/
+
