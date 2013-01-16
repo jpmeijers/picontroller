@@ -1,3 +1,5 @@
-Add password authentication
+Add password authentication and logging
 Add i2c temperature sensor
 Add support for "plugins" to read i2c sensors.
+Beacon inputs and outputs
+APRS logging
