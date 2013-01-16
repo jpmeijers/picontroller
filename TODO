@@ -1,0 +1,3 @@
+Add password authentication
+Add i2c temperature sensor
+Add support for "plugins" to read i2c sensors.
