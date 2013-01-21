@@ -67,42 +67,51 @@ def process_aprs_message(config, source_callsign, source_ssid, data):
 	#made lower case, while the value is kept intact
 	list_of_users = config.options("Authorised users")
 	
-	
 	#All messages containing a message ID needs to be acked ackording to 
 	#the spec, APRS101, p71
 	msg_id_index = data.rfind('{')
 	if(msg_id_index != -1):	
-	
-		#If authorised, ack, else rej
-		if(source_callsign.lower() in list_of_users):
-			print "%s is an authorised user" % source_callsign
-			aprs_transmit.send_packet(config, ":"+(source_callsign+"-"+source_ssid).ljust(9)+":ack"+data[(msg_id_index+1):])
-
-		else:
-			print "%s is not an authorised user" % source_callsign
-			#send_packet(config, ":"+(source_callsign+"-"+source_ssid).ljust(9)+":rej"+data[(msg_id_index+1):])
-			#The rej packet was not interpreted correctly by APRStracker during testing. It was seen as another
-			#message and not a reject. Therefore ACK in this case too to prevent unneccesary retransmits.
-			aprs_transmit.send_packet(config, ":"+(source_callsign+"-"+source_ssid).ljust(9)+":ack"+data[(msg_id_index+1):])
+		aprs_transmit.send_packet(config, ":"+(source_callsign+"-"+source_ssid).ljust(9)+":ack"+data[(msg_id_index+1):])
 			
 		#Now strip the message id
 		data = data[:msg_id_index]
 		
-
-	#If unauthorised, ignore message further.
-	if(source_callsign.lower() in list_of_users):
-		pass
-	else:
-		return
-
-	#TODO: Use the password in the config file to do authentication
-	#if authenticated:
-	#	pass
-	#else:
-	#	return
-	
 	#Remove the callsign from the data
 	data = data[11:]
+
+	#If the message is in the format ":_________:ack#####" it is an ACK
+	#for a message we sent. We can ignore this message for now.
+	#TODO: mark the packet as acked in a queue of unacked sent messages
+	if (data.lower().find("ack") == 0):
+		return
+	
+	if (config.get("Authorisation","enable_auth") == "True"):
+		#If unauthorised, ignore message further.
+		if(source_callsign.lower() in list_of_users):
+			if (config.get("Authorisation","logauth") == "True"):
+				file = open(config.get("Authorisation","authlogfilelocation"), 'a')
+				file.write("AUTHED USER: "+source_callsign+"-"+source_ssid+"  MSG: "+data+"\n")
+				file.close()
+		else:
+			if (config.get("Authorisation","logauth") == "True"):
+				file = open(config.get("Authorisation","authlogfilelocation"), 'a')
+				file.write("UNAUTHED USER: "+source_callsign+"-"+source_ssid+"  MSG: "+data+"\n")
+				file.close()
+				
+			#Consider the following line very carefully. Do you really want to send messages on the request of any user?
+			#aprs_transmit.send_message(config, ":"+(source_callsign+"-"+source_ssid).ljust(9)+":Invalid user or password")
+			return
+
+	if (config.get("Authorisation","require_password") == "True"):
+		#TODO: Use the password in the config file to do authentication
+		user_password = config.get("Authorised users",source_callsign.lower())
+		if (data.find(user_password) != -1):
+			data = data.strip(user_password)
+			data = data.strip()
+		else:
+			aprs_transmit.send_message(config, ":"+(source_callsign+"-"+source_ssid).ljust(9)+":Invalid user or password")
+			return
+	
 	#Make all caps to be case insensitive
 	data = data.upper()
 	
